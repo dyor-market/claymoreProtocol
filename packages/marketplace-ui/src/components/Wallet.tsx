@@ -11,7 +11,6 @@ import {
   SolletWalletAdapter,
   TorusWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
-import { tokenAuthFetchMiddleware } from "@strata-foundation/web3-token-auth";
 import React, { useMemo } from "react";
 import { SOLANA_URL } from "../constants";
 import { useEndpoint } from "../hooks";
@@ -53,10 +52,7 @@ export const Wallet = ({
     <ConnectionProvider
       endpoint={cluster || endpoint}
       config={{
-        commitment: "confirmed",
-        fetchMiddleware: tokenAuthFetchMiddleware({
-          getToken,
-        }),
+        commitment: "confirmed"
       }}
     >
       <WalletProvider wallets={wallets} autoConnect>

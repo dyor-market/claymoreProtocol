@@ -1,5 +1,12 @@
+// @ts-nocheck
 import { NFT_STORAGE_API_KEY } from "../../constants";
 import {
+  FanoutClient,
+  MembershipModel,
+} from "@glasseaters/hydra-sdk"
+import { NodeWallet } from "@project-serum/common"; //TODO remove this
+
+import {  
   Alert,
   Button,
   FormControl,
@@ -19,14 +26,17 @@ import {
 import { yupResolver } from "@hookform/resolvers/yup";
 import { DataV2 } from "@metaplex-foundation/mpl-token-metadata";
 import { NATIVE_MINT } from "@solana/spl-token";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { Keypair, PublicKey } from "@solana/web3.js";
+import { useWallet, WalletContextState } from "@solana/wallet-adapter-react";
+import { Keypair, PublicKey, Connection } from "@solana/web3.js";
+import { Wallet } from "@project-serum/anchor";
 import { MarketplaceSdk } from "@strata-foundation/marketplace-sdk";
 import {
   humanReadablePercentage,
   useCollective,
   useProvider,
   usePublicKey,
+  useStrataSdks,
+  useTokenBondingFromMint,
   useTokenMetadata,
 } from "@strata-foundation/react";
 import {
@@ -51,8 +61,10 @@ import { IMetadataFormProps, TokenMetadataInputs } from "./TokenMetadataInputs";
 import { Disclosures, disclosuresSchema, IDisclosures } from "./Disclosures";
 import { RadioCardWithAffordance } from "./RadioCard";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+var first = true
+const clayMint = new PublicKey("12yd5cGsGeBEDJzzRxKfSttGB4bbA7oY4frEBBsiUwiq")//"91CeYr7diK3GmyiYLG4WtX1H9qRjdeMEnmw8uSSF9ZAz")
 
-type CurveType = "aggressive" | "stable" | "utility";
+type CurveType = "superlovely" | "lovely" | "aggressive" | "stable" | "utility";
 interface IFullyManagedForm extends IMetadataFormProps {
   mint: string;
   symbol: string;
@@ -66,28 +78,47 @@ interface IFullyManagedForm extends IMetadataFormProps {
   buyTargetRoyaltyPercentage: number;
   disclosures: IDisclosures;
 }
+var ownerTokenRef: PublicKey
+var tokenCollectiveSdk2: any
+var tokenBondingSdk2: any
+export const FullyManagedForm: React.FC = () => {
+  const formProps = useForm<IFullyManagedForm>({
+    defaultValues: {
+      disclosures: {
+        acceptedFees: true,
+      },
+    },
+  });
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors, isSubmitting },
+    watch,
+  } = formProps;
+  var wallet = useWallet()
+  var connected = wallet.connected 
+  var publicKey = wallet.publicKey 
+  const { visible, setVisible } = useWalletModal();
+  const { awaitingApproval } = useProvider();
+  var { tokenCollectiveSdk, tokenBondingSdk, loading: eh } = useStrataSdks()
+if (!eh){
+  tokenCollectiveSdk2 = tokenCollectiveSdk
+  tokenBondingSdk2 = tokenBondingSdk
+}
+  const { marketplaceSdk, loading } = useMarketplaceSdk();
+  const router = useRouter();
 
-const validationSchema = yup.object({
-  mint: yup.string().required(),
-  image: yup.mixed().required(),
-  name: yup.string().required().min(2),
-  description: yup.string().required().min(2),
-  symbol: yup.string().required().min(2),
-  startingPrice: yup.number().required().min(0),
-  isAntiBot: yup.boolean(),
-  isSocial: yup.boolean(),
-  sellBaseRoyaltyPercentage: yup.number().required(),
-  buyBaseRoyaltyPercentage: yup.number().required(),
-  sellTargetRoyaltyPercentage: yup.number().required(),
-  buyTargetRoyaltyPercentage: yup.number().required(),
-  disclosures: disclosuresSchema,
-});
-
-async function createFullyManaged(
-  marketplaceSdk: MarketplaceSdk,
-  values: IFullyManagedForm
-): Promise<PublicKey> {
-  const mint = new PublicKey(values.mint);
+  function percentOr(percentu32: number | undefined, def: number) {
+    return percentu32 ? Number(humanReadablePercentage(percentu32)) : def;
+  }
+  var values: any
+var wallet: WalletContextState
+var connection: Connection
+const onSubmit = async (values: IFullyManagedForm) => {
+  console.log(values)
+  if (marketplaceSdk){
+  const mint = clayMint
   const tokenCollectiveSdk = marketplaceSdk.tokenCollectiveSdk;
   const tokenBondingSdk = tokenCollectiveSdk.splTokenBondingProgram;
   const targetMintKeypair = Keypair.generate();
@@ -102,10 +133,16 @@ async function createFullyManaged(
     case "aggressive":
       k = 2;
       break;
+    case "lovely":
+      k = 4;
+      break;
+    case "superlovely":
+      k = 6;
+      break;
   }
 
   let config: ICurveConfig = new TimeDecayExponentialCurveConfig({
-    c: values.startingPrice,
+    c: Math.ceil(values.startingPrice * 10 ** 2),
     k0: k,
     k1: k,
     d: 1,
@@ -116,8 +153,8 @@ async function createFullyManaged(
       .addCurve(
         0,
         new TimeDecayExponentialCurveConfig({
-          c: values.startingPrice,
-          k0: 0,
+          c: Math.ceil(values.startingPrice * 10 ** 2),
+          k0: 0,  
           k1: 0,
           d: 1,
           interval: 0,
@@ -126,15 +163,15 @@ async function createFullyManaged(
       .addCurve(
         30 * 60, // 30 minutes
         new TimeDecayExponentialCurveConfig({
-          c: values.startingPrice,
+          c: Math.ceil(values.startingPrice * 10 ** 2),
           k0: 0,
           k1: k,
           d: 0.5,
           interval: 1.5 * 60 * 60, // 1.5 hours
         })
       );
-  }
-  const curveOut = await tokenBondingSdk.initializeCurveInstructions({
+  } 
+ var curve = await tokenBondingSdk.initializeCurve({
     config,
   });
   const bondingOpts = {
@@ -143,9 +180,9 @@ async function createFullyManaged(
     buyTargetRoyaltyPercentage: values.buyTargetRoyaltyPercentage,
     sellBaseRoyaltyPercentage: values.sellBaseRoyaltyPercentage,
     sellTargetRoyaltyPercentage: values.sellTargetRoyaltyPercentage,
-    curve: curveOut.output.curve,
+    curve: curve,
     targetMint: targetMintKeypair.publicKey,
-    targetMintDecimals: 9,
+    targetMintDecimals: 2,
   };
   const uri = await tokenCollectiveSdk.splTokenMetadata.uploadMetadata({
     provider: values.provider,
@@ -166,95 +203,103 @@ async function createFullyManaged(
     uses: null,
   });
 
-  if (values.isSocial) {
-    const bondingOut = await tokenCollectiveSdk.createSocialTokenInstructions({
+    const { ownerTokenRef, tokenBonding } = await tokenCollectiveSdk.createSocialToken({
       mint,
       tokenBondingParams: bondingOpts,
       owner: tokenCollectiveSdk.wallet.publicKey,
       targetMintKeypair,
       metadata,
     });
-    await tokenCollectiveSdk.executeBig(
-      Promise.resolve({
-        output: null,
-        instructions: [curveOut.instructions, ...bondingOut.instructions],
-        signers: [curveOut.signers, ...bondingOut.signers],
-      })
+    
+  var fanoutSdk = new FanoutClient(
+    new Connection("https://ssc-dao.genesysgo.net/"),
+   // @ts-ignore
+    wallet
     );
-  } else {
-    const metaOut = await marketplaceSdk.createMetadataForBondingInstructions({
-      targetMintKeypair,
-      metadataUpdateAuthority: tokenCollectiveSdk.wallet.publicKey,
-      metadata,
-      decimals: bondingOpts.targetMintDecimals,
-    });
-    const bondingOut = await tokenBondingSdk.createTokenBondingInstructions(
-      bondingOpts
-    );
-    await tokenBondingSdk.executeBig(
-      Promise.resolve({
-        output: null,
-        instructions: [
-          [...curveOut.instructions, ...metaOut.instructions],
-          bondingOut.instructions,
-        ],
-        signers: [
-          [...curveOut.signers, ...metaOut.signers],
-          bondingOut.signers,
-        ],
-      })
-    );
-  }
+  
+    
+//const supply = 1000000 * 10 ** 6;
+//const tokenAcct = await membershipMint.createAccount(
+//  authorityWallet.publicKey
+//);
+console.log(targetMintKeypair.publicKey.toBase58())
+const  { fanout }  = await fanoutSdk.initializeFanout({
+totalShares: 0,
+name: `Boom` + (Math.floor(Math.random()* 999999)).toString(),
+membershipModel: MembershipModel.Token,
+mint: targetMintKeypair.publicKey
+});
+console.log(fanout.toBase58())
 
-  return targetMintKeypair.publicKey;
+
+const {tokenAccount: target }  = await fanoutSdk.initializeFanoutForMint({
+  fanout,
+  mint: targetMintKeypair.publicKey,
+});
+const {tokenAccount: base }  = await fanoutSdk.initializeFanoutForMint({
+  fanout,
+  mint: clayMint,
+});
+
+var bt = new PublicKey("2vnUcuspVcejUTc5x45MM2EUbfivBDhcAJF3oWgZ9wsE")
+// @ts-ignore
+if (tokenBondingSdk2 && tokenCollectiveSdk2){
+// @ts-ignore
+//var fanout = new PublicKey("4zESBDsnSxY8KwrWBP9GvDdEDz2C51xGZ8rw1Hpqok6Z")
+//var target = new PublicKey("63gmMQ2jtq4bwiXK7Zg4GQNWkcYVx9HbeE25m6SduTP5")
+//var base = new PublicKey("97owafSVP1Xz3UmuJmurvJxczCVdY6qnwh1bvGrrSYQQ")
+/*var collectiveTokenRef = (
+  await SplTokenCollective.ownerTokenRefKey({
+    owner: wallet.publicKey,
+    isPrimary:true  })
+)[0]; */
+var tr = await tokenCollectiveSdk2.getTokenRef(ownerTokenRef)
+ //( new PublicKey("6fpBqJ39zgi2eyzVu422XK3E8jZHNTZuKxqimHmHWMSz"))//6sanmNpr6CbuPS69yzYYfkBeCBxerLg9TYerjH6gea7W"))
+console.log(ownerTokenRef.toBase58())
+console.log(bt.toBase58())
+console.log(target.toBase58())
+console.log(base.toBase58())
+
+var lala =    await tokenBondingSdk2.updateTokenBondingInstructions({
+//console.log(ownerTokenRef )
+ // so this is going to need to be tokenRefKey, and not this
+  tokenBonding,// 	             ownerTokenRef,
+                buyTargetRoyalties: target,
+                sellTargetRoyalties: target,
+                buyBaseRoyalties: bt,
+                sellBaseRoyalties: base,
+                        })
+      
+// @ts-ignore
+
+
+//            await tokenCollectiveSdk2.sendInstructions(lala.instructions, [)
+                      
 }
-
-export const FullyManagedForm: React.FC = () => {
-  const formProps = useForm<IFullyManagedForm>({
-    resolver: yupResolver(validationSchema),
-    defaultValues: {
-      disclosures: {
-        acceptedFees: true,
-      },
-    },
-  });
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    formState: { errors, isSubmitting },
-    watch,
-  } = formProps;
-  const { connected, publicKey } = useWallet();
-  const { visible, setVisible } = useWalletModal();
-  const { awaitingApproval } = useProvider();
-  const { execute, loading, error } = useAsyncCallback(createFullyManaged);
-  const { marketplaceSdk } = useMarketplaceSdk();
-  const router = useRouter();
-
-  function percentOr(percentu32: number | undefined, def: number) {
-    return percentu32 ? Number(humanReadablePercentage(percentu32)) : def;
-  }
-
-  const onSubmit = async (values: IFullyManagedForm) => {
-    const mintKey = await execute(marketplaceSdk!, values);
+  console.log( [targetMintKeypair.publicKey, fanout ] )
     router.push(
       route(routes.swap, {
-        mintKey: mintKey.toBase58(),
+        mintKey: targetMintKeypair.publicKey.toBase58(), fanoutKey: fanout.toBase58()
       }),
       undefined,
       { shallow: true }
     );
-  };
+  }; 
 
+}
+ 
   const { name = "", symbol = "", isSocial, mint, curveType } = watch();
   const mintKey = usePublicKey(mint);
-  const { result: collectiveKey } = useAsync(
+var tr = usePublicKey("12yd5cGsGeBEDJzzRxKfSttGB4bbA7oY4frEBBsiUwiq")
+ownerTokenRef = useTokenBondingFromMint(tr)
+
+  const collectiveKey = usePublicKey("E5kLYTP6NfmravmLpYtA65HUgXK51X5c1gwu7Fhwd7nd") /*Async(
     async (mint: string | undefined) =>
       mint ? SplTokenCollective.collectiveKey(new PublicKey(mint)) : undefined,
     [mint]
-  );
-  const { info: collective } = useCollective(collectiveKey && collectiveKey[0]);
+  );*/
+  const { info: collective } = useCollective(collectiveKey)// && collectiveKey[0]);
+  console.log(collective  )
   const tokenBondingSettings = collective?.config
     .claimedTokenBondingSettings as ITokenBondingSettings | undefined;
   const {
@@ -271,6 +316,22 @@ export const FullyManagedForm: React.FC = () => {
   const group = getRootProps();
 
   const curveOptions = [
+
+    {
+      value: "superlovely",
+      heading: "superlovely",
+      illustration: "/superlovely.jpg",
+      helpText:
+        "@GrapeDeanslist @_Dean_Machine u the man/men/ppl/pepes.",
+    },
+
+    {
+      value: "lovely",
+      heading: "lovely",
+      illustration: "/lovely.png",
+      helpText:
+        "Sorry, @redacted_noah",
+    },
     {
       value: "aggressive",
       heading: "Aggressive",
@@ -293,7 +354,11 @@ export const FullyManagedForm: React.FC = () => {
         "A curve with a price sensitivity that starts high and lowers with purchases. This curve is best suited for utility use cases, as it rewards early adopters and scales the supply so that the token can be exchanged for goods/services.",
     },
   ];
+  if (first ){
+    first = false 
 
+  setValue("mint", mint)
+  }
   return (
     <Flex position="relative">
       {!connected && (
@@ -394,25 +459,7 @@ export const FullyManagedForm: React.FC = () => {
               </Stack>
             </FormControlWithError>
 
-            <FormControlWithError
-              id="isSocial"
-              help={`If this is a social token, it will be associated with your wallet. This means applications like Wum.bo will be able to discover this token by looking up your wallet, which may be associated with your twitter handle, .sol domain, or any other web3 applications. A social token can be part of a network of other social tokens: a collective.`}
-              label="Social Token?"
-              errors={errors}
-            >
-              <Switch {...register("isSocial")} />
-            </FormControlWithError>
-            <FormControlWithError
-              id="mint"
-              help={`The mint that should be used to purchase this token, example ${NATIVE_MINT.toBase58()} for SOL`}
-              label="Mint"
-              errors={errors}
-            >
-              <MintSelect
-                value={watch("mint")}
-                onChange={(s) => setValue("mint", s)}
-              />{" "}
-            </FormControlWithError>
+           
 
             <FormControlWithError
               id="startingPrice"
@@ -457,8 +504,8 @@ export const FullyManagedForm: React.FC = () => {
                       tokenBondingSettings?.maxBuyTargetRoyaltyPercentage,
                       100
                     )}
-                    placeholder="5"
-                    defaultValue={5}
+                    placeholder="2"
+                    defaultValue={2}
                     step={0.00001}
                     {...register("buyTargetRoyaltyPercentage")}
                   />
@@ -479,8 +526,8 @@ export const FullyManagedForm: React.FC = () => {
                       tokenBondingSettings?.maxSellTargetRoyaltyPercentage,
                       100
                     )}
-                    placeholder="0"
-                    defaultValue={0}
+                    placeholder="2"
+                    defaultValue={2}
                     step={0.00001}
                     {...register("sellTargetRoyaltyPercentage")}
                   />
@@ -505,8 +552,8 @@ export const FullyManagedForm: React.FC = () => {
                       tokenBondingSettings?.maxBuyBaseRoyaltyPercentage,
                       100
                     )}
-                    placeholder="0"
-                    defaultValue={0}
+                    placeholder="2"
+                    defaultValue={2}
                     step={0.00001}
                     {...register("buyBaseRoyaltyPercentage")}
                   />
@@ -529,8 +576,8 @@ export const FullyManagedForm: React.FC = () => {
                       tokenBondingSettings?.maxSellBaseRoyaltyPercentage,
                       100
                     )}
-                    placeholder="0"
-                    defaultValue={0}
+                    placeholder="2"
+                    defaultValue={2}
                     step={0.00001}
                     {...register("sellBaseRoyaltyPercentage")}
                   />
@@ -546,12 +593,6 @@ export const FullyManagedForm: React.FC = () => {
             </VStack>
 
             <Disclosures fees={0} />
-
-            {error && (
-              <Alert status="error">
-                <Alert status="error">{error.toString()}</Alert>
-              </Alert>
-            )}
 
             <Button
               type="submit"

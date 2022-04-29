@@ -4,7 +4,7 @@ import { NextPage } from "next";
 
 export const NewFullymanaged: NextPage = () => {
   return (
-    <FormContainer title="New Fully Managed Token">
+    <FormContainer title="New BoomBoom">
       <FullyManagedForm />
     </FormContainer>
   );

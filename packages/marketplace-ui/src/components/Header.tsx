@@ -31,7 +31,7 @@ const NavLink = ({ href, children }: { href: string; children: ReactNode }) => (
 export const Header: React.FC = () => {
   const Links = [
     { link: "Launchpad", href: route(routes.launchpad) },
-    { link: "Bounties", href: route(routes.bounties) },
+  //  { link: "Bounties", href: route(routes.bounties) },
   ];
   const { disconnect, connected } = useWallet();
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -62,7 +62,7 @@ export const Header: React.FC = () => {
             />
             <HStack spacing={8} alignItems={"center"}>
               <Link href="/">
-                <Image alt="Strata Launchpad" src="/logo-launchpad.svg" />
+                <Image height="40px" alt="Claymore Protocol" src="/jare.jpeg" />
               </Link>
               <HStack
                 as={"nav"}

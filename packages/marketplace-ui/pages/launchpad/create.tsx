@@ -20,21 +20,21 @@ export const CreateToken: FC = () => {
     heading: string;
     illustration: string;
     helpText: string;
-  }[] = [
+  }[] = [ 
     {
       value: CreateTokenOption.FullyManaged,
-      heading: "Fully Managed",
+      heading: "Claymores",
       illustration: "/fully-managed.svg",
       helpText:
-        "Create you a token that you can let people buy right now. You do not need to worry about liquidity providers, supply management, or pricing.",
-    },
+        "Clickme"//"Create you a token that you can let people buy right now. You do not need to worry about liquidity providers, supply management, or pricing.",
+    }, /*
     {
       value: CreateTokenOption.SelfManaged,
       heading: "Self Managed",
       illustration: "/self-managed.svg",
       helpText:
         "You want to manage your own supply and liquidity. You do not need protocol managed liquditity.",
-    },
+    }, */
   ];
 
   const { getRootProps, getRadioProps } = useRadioGroup({

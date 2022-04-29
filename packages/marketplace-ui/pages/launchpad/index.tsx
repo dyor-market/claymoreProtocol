@@ -34,30 +34,30 @@ export const LaunchPad: FC = ({ children }) => {
   }[] = [
     {
       value: LandingOption.CreateToken,
-      heading: "Create New Token",
+      heading: "Create New Claymore",
       illustration: "/create-a-token.svg",
-      helpText: "You don’t have a token yet, but would like to create one.",
+      helpText: "Ayy.",
     },
     {
       value: LandingOption.SellToken,
-      heading: "Sell Existing Token",
-      illustration: "/sell-a-token.svg",
-      helpText: "You already have a token created that you would like to sell.",
+      heading: "Show Me the APYs",
+      illustration: "/sell-token-later.svg",
+      helpText: "Wait, sers.",
     },
     {
       value: LandingOption.Fundraise,
-      heading: "Fundraise",
+      heading: "Swap/Stake/Unstake/YIELD BOOM",
       illustration: "/fundraise.svg",
       helpText:
-        "You want to collect funds for a cause, where contributors get a token representing their contributions.",
-    },
+        "This is the cool bit.",
+    }/*
     {
       value: LandingOption.LBC,
       heading: "Dynamic Pricing NFT Mint",
       illustration: "/dynamic-pricing-mint.svg",
       helpText:
         "Sell NFTs from a Metaplex CandyMachine using Strata’s dynamic price discovery. This allows you to avoid bots without the need of a whitelist.",
-    },
+    },*/
   ];
 
   const { getRootProps, getRadioProps } = useRadioGroup({
@@ -69,13 +69,14 @@ export const LaunchPad: FC = ({ children }) => {
 
   const handleOnNext = async () => {
     if (selectedOption === LandingOption.CreateToken)
-      router.push(route(routes.create));
+      router.push(route(routes.newFullyManaged));
 
     if (selectedOption === LandingOption.SellToken)
       router.push(route(routes.sell));
 
     if (selectedOption === LandingOption.Fundraise)
-      router.push(route(routes.newBounty));
+      router.push(
+        route(routes.swap, { mintKey: "12yd5cGsGeBEDJzzRxKfSttGB4bbA7oY4frEBBsiUwiq", fanoutKey:"Gha7WZxD76pbS6NCrP2kZR2PGhUmfFEZnKU4oYvBJhkp" }));
 
     if (selectedOption === LandingOption.LBC)
       router.push(route(routes.newLbc, { candymachine: "true" }));
@@ -166,32 +167,32 @@ export const LaunchPad: FC = ({ children }) => {
           cursor="pointer"
           onClick={() =>
             window.open(
-              "https://twitter.com/messages/compose?recipient_id=1455566541941006345"
+              "https://twitter.com/@staccart"
             )
           }
         >
           <Stack direction="row">
             <Flex flexShrink={0} justifyContent="center" alignItems="center">
               <Image
-                src="/sell-token-later.svg"
-                height="50px"
+                src="/jare.jpeg"
+                height="100px"
                 width="100%"
                 alt="Check Back Later"
               />
             </Flex>
             <Stack flexGrow={1} spacing={0}>
               <Text fontWeight="bold" fontSize="sm">
-                Dont see what you want to do?
+                The stream of conciousness is on twitter.
               </Text>
               <Text color="gray.500" fontSize="xs">
-                Check back later as we will be adding more options to this page.
+                Click, follow, notifs on. 
               </Text>
               <Text color="gray.500" fontSize="xs" pt={2}>
-                Or feel free to reach out to us via{" "}
+                Mm,{" "}
                 <Text as="span" color="orange.500">
                   Twitter
                 </Text>{" "}
-                and we can brainstorm something with you together!
+                : for shitpostin n networkin (in that order)
               </Text>
             </Stack>
           </Stack>

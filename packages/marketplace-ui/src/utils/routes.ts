@@ -30,7 +30,7 @@ export const routes: Record<string, IRoute> = {
     path: "/token-offering/:mintKey",
     params: ["mintKey"],
   },
-  swap: { path: "/swap/:mintKey", params: ["mintKey"] },
+  swap: { path: "/swap/:mintKey?fanoutKey=:fanoutKey", params: ["mintKey", "fanoutKey"] },
   newFullyManaged: { path: "/launchpad/fully-managed/new", params: [] },
   newManual: { path: "/launchpad/manual/new", params: [] },
   launchpad: { path: "/launchpad", params: [] },

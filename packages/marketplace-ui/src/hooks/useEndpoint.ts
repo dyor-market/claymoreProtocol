@@ -21,35 +21,11 @@ export function getClusterAndEndpoint(clusterOrEndpoint: string): {
   endpoint: string;
 } {
   if (clusterOrEndpoint) {
-    if (clusterOrEndpoint.startsWith("http")) {
-      if (clusterOrEndpoint.includes("dev")) {
-        return { cluster: "devnet", endpoint: clusterOrEndpoint };
-      } else {
-        return { cluster: "mainnet-beta", endpoint: clusterOrEndpoint };
-      }
-    } else if (shortnames.has(clusterOrEndpoint)) {
-      if (clusterOrEndpoint === "localnet") {
-        return {
-          cluster: "localnet",
-          endpoint: clusterApiUrl(clusterOrEndpoint as WalletAdapterNetwork),
-        };
-      } else if (clusterOrEndpoint === "devnet") {
-        return {
-          cluster: "devnet",
-          endpoint: "https://psytrbhymqlkfrhudd.dev.genesysgo.net:8899/",
-        };
-      } else if (clusterOrEndpoint === "mainnet-beta") {
+   
         return {
           cluster: "mainnet-beta",
-          endpoint: "https://strataprotocol.genesysgo.net",
+          endpoint: "https://ssc-dao.genesysgo.net/",
         };
-      }
-
-      return {
-        cluster: clusterOrEndpoint,
-        endpoint: "http://localhost:8899",
-      };
-    }
   }
 
   return { cluster: "mainnet-beta", endpoint: DEFAULT_ENDPOINT };
