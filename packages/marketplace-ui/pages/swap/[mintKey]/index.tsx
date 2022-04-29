@@ -261,7 +261,7 @@ async function onChange(e: any){
       paddingBottom="200px"
     >
       <MetadataMeta
-        title={`Strata Swap | ${name}`}
+        title={`Claymore Protocol | ${name}`}
         description={description}
         image={image}
         url={`${SITE_URL}/bounty/${mintKey}/`}

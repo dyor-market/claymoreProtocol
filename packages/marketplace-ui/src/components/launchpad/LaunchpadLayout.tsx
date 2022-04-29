@@ -42,7 +42,7 @@ export const LaunchpadLayout: FC<LaunchpadLayoutProps> = ({
               background="linear-gradient(to right,#FFCD01, #E17E44);"
               backgroundClip="text"
             >
-              Strata Launchpad
+              Claymore Protocol
             </Text>
           </Text>
         </Stack>

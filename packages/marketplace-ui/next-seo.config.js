@@ -1,12 +1,12 @@
 import { SITE_URL } from "@/constants";
 
 const defaultSeo = {
-  title: "Strata Launchpad",
+  title: "Claymore Protocol",
   description:
-    "Strata Launchpad enables anyone to launch a token around a person, idea, or collective in minutes",
+    "Claymore Protocol enables anyone to launch a token around a person, idea, or collective in minutes",
   openGraph: {
     url: SITE_URL,
-    title: "Strata Launchpad",
+    title: "Claymore Protocol",
     description:
       "Launch a token around a person, project, idea, or collective in minutes",
     images: [
