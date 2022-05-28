@@ -62,7 +62,8 @@ import { Disclosures, disclosuresSchema, IDisclosures } from "./Disclosures";
 import { RadioCardWithAffordance } from "./RadioCard";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 var first = true
-const clayMint = new PublicKey("12yd5cGsGeBEDJzzRxKfSttGB4bbA7oY4frEBBsiUwiq")//"91CeYr7diK3GmyiYLG4WtX1H9qRjdeMEnmw8uSSF9ZAz")
+import { useTwWrappedSolMint } from "@strata-foundation/react";
+let clayMint: PublicKey | null = null;// useTwWrappedSolMint()//new PublicKey("12yd5cGsGeBEDJzzRxKfSttGB4bbA7oY4frEBBsiUwiq")//"91CeYr7diK3GmyiYLG4WtX1H9qRjdeMEnmw8uSSF9ZAz")
 
 type CurveType = "superlovely" | "lovely" | "aggressive" | "stable" | "utility";
 interface IFullyManagedForm extends IMetadataFormProps {
@@ -82,6 +83,7 @@ var ownerTokenRef: PublicKey
 var tokenCollectiveSdk2: any
 var tokenBondingSdk2: any
 export const FullyManagedForm: React.FC = () => {
+  clayMint = useTwWrappedSolMint();
   const formProps = useForm<IFullyManagedForm>({
     defaultValues: {
       disclosures: {
@@ -293,7 +295,7 @@ var lala =    await tokenBondingSdk2.updateTokenBondingInstructions({
 var tr = usePublicKey("12yd5cGsGeBEDJzzRxKfSttGB4bbA7oY4frEBBsiUwiq")
 ownerTokenRef = useTokenBondingFromMint(tr)
 
-  const collectiveKey = usePublicKey("E5kLYTP6NfmravmLpYtA65HUgXK51X5c1gwu7Fhwd7nd") /*Async(
+  const collectiveKey = useTwWrappedSolMint()/* usePublicKey("E5kLYTP6NfmravmLpYtA65HUgXK51X5c1gwu7Fhwd7nd") /*Async(
     async (mint: string | undefined) =>
       mint ? SplTokenCollective.collectiveKey(new PublicKey(mint)) : undefined,
     [mint]

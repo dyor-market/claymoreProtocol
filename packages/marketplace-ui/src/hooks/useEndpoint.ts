@@ -23,12 +23,12 @@ export function getClusterAndEndpoint(clusterOrEndpoint: string): {
   if (clusterOrEndpoint) {
    
         return {
-          cluster: "mainnet-beta",
-          endpoint: "https://ssc-dao.genesysgo.net/",
+          cluster: "devnet",
+          endpoint: "https://psytrbhymqlkfrhudd.dev.genesysgo.net:8899/",
         };
   }
 
-  return { cluster: "mainnet-beta", endpoint: DEFAULT_ENDPOINT };
+  return { cluster: "devnet", endpoint: DEFAULT_ENDPOINT };
 }
 
 export function useEndpoint(): IClusterState {
