@@ -1,9 +1,10 @@
 import React, { FC } from "react";
 import {
-  ThemeProvider as ChakraThemeProvider,
   extendTheme,
-  
+  ChakraProvider,
+  theme as chakraTheme,
 } from "@chakra-ui/react";
+import { runIfFn, mergeWith } from "@chakra-ui/utils";
 
 const primary = {
   50: "#fdefe7",
@@ -18,16 +19,74 @@ const primary = {
   900: "#e54714",
 };
 
+function primaryAlwaysLightMode(componentConfig: any): any {
+  return {
+    ...componentConfig,
+    variants: Object.entries(componentConfig.variants || {}).reduce((acc, entry) => {
+      acc[entry[0]] = ({ colorMode, colorScheme, ...rest }: any) =>
+        runIfFn(entry[1], { ...rest, colorScheme, colorMode: colorScheme === "primary" ? "light" : colorMode });
+
+      return acc;
+    }, {} as Record<string, any>),
+    baseStyle: ({ colorMode, colorScheme, ...rest }: any) =>
+      runIfFn(componentConfig.baseStyle, { ...rest, colorScheme, colorMode: colorScheme === "primary" ? "light" : colorMode }),
+  };
+}
+
 export const theme: any = extendTheme({
   shadows: {
     outline: "none",
   },
+  styles: {
+    // CSS reset gets rid of some things we do want
+    global: {
+      li: {
+        display: "list-item",
+        textAlign: "-webkit-match-parent",
+      },
+      ul: {
+        paddingInlineStart: "20px",
+      },
+      ol: {
+        display: "block",
+        listStyleType: "decimal",
+        marginBlockStart: "1em",
+        marginBlockEnd: "1em",
+        marginInlineStart: "0px",
+        marginInlineEnd: "0px",
+        paddingInlineStart: "40px",
+      },
+      blockquote: {
+        display: "block",
+        marginBlockStart: "1em",
+        marginBlockEnd: "1em",
+        marginInlineStart: "40px",
+        marginInlineEnd: "40px",
+
+        borderLeft: "5px solid #ccc",
+        margin: "1.5em 10px",
+        padding: "0.5em 10px 0.5em 10px",
+      },
+      code: { fontFamily: "monospace" },
+    },
+  },
   initialColorMode: "light",
   useSystemColorMode: false,
+  fonts: {
+    ...chakraTheme.fonts,
+    body: `Avenir,Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol"`,
+    heading: `Avenir,Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol"`,
+  },
   components: {
-    Button: {
-      baseStyle: { _focus: { boxShadow: "none" } },
-    },
+    Button: primaryAlwaysLightMode(
+      mergeWith(
+        {
+          baseStyle: { _focus: { boxShadow: "none" } },
+        },
+        chakraTheme.components.Button
+      )
+    ),
+    Progress: primaryAlwaysLightMode(chakraTheme.components.Progress),
     Input: {
       variants: {
         outline: {
@@ -85,7 +144,8 @@ export const theme: any = extendTheme({
   },
 });
 
-export const ThemeProvider: FC = ({ children }) => (
-  // @ts-ignore
-  <ChakraThemeProvider theme={theme}>{children}</ChakraThemeProvider>
+export const ThemeProvider: FC<{resetCSS?: boolean}> = ({ children, resetCSS = false }) => (
+  <ChakraProvider resetCSS={resetCSS} theme={theme}>
+    {children}
+  </ChakraProvider>
 );

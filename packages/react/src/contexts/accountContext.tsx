@@ -1,4 +1,4 @@
-import React, { FC, ReactNode, createContext, useMemo, useEffect } from "react";
+import React, { FC, ReactNode, createContext, useMemo, useEffect, useState } from "react";
 import { AccountInfo, Commitment, PublicKey } from "@solana/web3.js";
 import { AccountFetchCache } from "@strata-foundation/spl-utils";
 import { DEFAULT_COMMITMENT } from "../constants";
@@ -20,13 +20,20 @@ export const AccountProvider: FC<IAccountProviderProps> = ({
   extendConnection = true,
 }) => {
   const { connection } = useConnection();
-  const cache = useMemo(() => {
-    return connection && new AccountFetchCache({
-      connection,
-      delay: 500,
-      commitment,
-      extendConnection,
-    });
+  const [cache, setCache] = useState<AccountFetchCache>();
+  useEffect(() => {
+    if (connection) {
+      cache?.close();
+
+      setCache(
+        new AccountFetchCache({
+          connection,
+          delay: 50,
+          commitment,
+          extendConnection,
+        })
+      );
+    }
   }, [connection]);
 
   return (

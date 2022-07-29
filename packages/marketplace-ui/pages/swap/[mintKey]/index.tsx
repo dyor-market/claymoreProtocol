@@ -1,5 +1,4 @@
 // @ts-nocheck
-
 import { MetadataMeta } from "@/components/MetadataMeta";
 import { useState } from 'react'
 import {
@@ -38,8 +37,7 @@ import { TextProps } from "recharts";
 
 export function numberWithCommas(x: number, decimals: number = 4): string {
   return roundToDecimals(x, decimals).toLocaleString("en-US");
-} 
-//let blarg = 10 ** 9
+}
 const BlackBox = ({ children, ...other }: BoxProps) => {
   return (
     <Center
@@ -66,14 +64,13 @@ const numberFormater = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
-function asNumber (val?: BN, blarg?: BN)  {
+function asNumber (val?: BN)  {
     if (!val) {
       return undefined;
     }
 
-    return val.toNumber() / blarg;
+    return val.toNumber() / 10 ** 2;
   }
-let first123=  true
 export const getServerSideProps: GetServerSideProps =
   mintMetadataServerSideProps;
 var firsty = true
@@ -84,12 +81,7 @@ export const SwapDisplay: NextPage = ({
 }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
   const router = useRouter();
   console.log(router.query)
-  let [blarg, setBlarg] = useState(10 ** 9)
   const { mintKey: mintKeyRaw, fanoutKey } = router.query;
-if (mintKeyRaw.length > 2 && first123){
-first123=false  
-setBlarg(mintKeyRaw == "12yd5cGsGeBEDJzzRxKfSttGB4bbA7oY4frEBBsiUwiq" ? 10 ** 2 : 10 ** 9)
- }
   const mintKey = usePublicKey(mintKeyRaw as string);
   const { info: tokenBonding, loading } = useTokenBondingFromMint(mintKey);
   console.log(tokenBonding)
@@ -122,9 +114,9 @@ setBlarg(mintKeyRaw == "12yd5cGsGeBEDJzzRxKfSttGB4bbA7oY4frEBBsiUwiq" ? 10 ** 2 
   console.log(fanoutAccount)
   console.log(fanoutAccount)
   // @ts-ignore
-  setTotal((asNumber(new BN(fanoutAccount?.totalShares), blarg)))
+  setTotal((asNumber(new BN(fanoutAccount?.totalShares))))
   // @ts-ignore
-    setStaked((asNumber(new BN(fanoutAccount?.totalStakedShares), blarg)))
+    setStaked((asNumber(new BN(fanoutAccount?.totalStakedShares))))
     // @ts-ignore
     setMembers(((new BN(fanoutAccount?.totalMembers))))
     
@@ -196,11 +188,11 @@ async function onChange(e: any){
       wallet
   );
 
-  console.log( parseFloat(shares) * blarg)// == "12yd5cGsGeBEDJzzRxKfSttGB4bbA7oY4frEBBsiUwiq" ? 10 ** 2 : 10 ** 9))
+  console.log( (parseFloat(shares) * 10 ** 2))
   var  ixs = await fanoutSdk.stakeTokenMemberInstructions(
         {
             
-            shares:  (parseFloat(shares) * blarg),// == "12yd5cGsGeBEDJzzRxKfSttGB4bbA7oY4frEBBsiUwiq" ? 10 ** 2 : 10 ** 9),
+            shares:  (parseFloat(shares) * 10 ** 2),
             // @ts-ignore
             fanout: fanout,
             membershipMint: mintKey,
@@ -261,7 +253,7 @@ async function onChange(e: any){
       paddingBottom="200px"
     >
       <MetadataMeta
-        title={`Claymore Protocol | ${name}`}
+        title={`Strata Swap | ${name}`}
         description={description}
         image={image}
         url={`${SITE_URL}/bounty/${mintKey}/`}
@@ -289,27 +281,25 @@ async function onChange(e: any){
  
 </BigText>
 
-<BigText>
- <BlackBox w="full" position="relative">{numberWithCommas(members, 1)} </BlackBox> Members
-
-</BigText>
-</HStack>
-
-
-<HStack flexGrow={4}>
- 
 
 <BigText>
  
  <BlackBox w="full" position="relative">{numberWithCommas(balance, 4)} </BlackBox> Balance
 </BigText>
+
+</HStack>
+</VStack>
+
+
+<VStack>
+ 
 <BigText>
  
  <BlackBox w="full" position="relative">{numberWithCommas(total, 4)} </BlackBox> Supply
 </BigText>
 
-</HStack>
-</VStack>            <VStack>
+</VStack>
+            <VStack>
             <Button onClick={claim} >meCLAIM</Button>
     
             <Input  style={{color:"black", fontSize: "30px;", backgroundColor: "grey"}} type="text" onInput={onChange} value={shares} />
@@ -318,7 +308,7 @@ async function onChange(e: any){
     
     <Button  onClick={us} >UNSTAKEALLme</Button>
     </VStack>
-            <Swap tokenBondingKey={tokenBonding!.publicKey} />
+            { !loading && <Swap id={tokenBonding!.publicKey} /> }
             </div>
           )}
         </Box>

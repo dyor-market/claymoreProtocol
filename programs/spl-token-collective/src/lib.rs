@@ -25,7 +25,7 @@ use token_metadata::UpdateMetadataAccount;
 use crate::token_metadata::UpdateMetadataAccountArgs;
 use crate::{account::*, arg::*, error::ErrorCode, state::*, util::*};
 
-declare_id!("TCo1sfSr2nCudbeJPykbif64rG9K1JNMGzrtzvPmp3y");
+declare_id!("6SLodLeX6pkaF4u55arxmAHjzuuQCoFuyTR9t73Jj4uw");
 
 pub fn initialize_social_token_v0(
   accounts: &mut InitializeSocialTokenV0,

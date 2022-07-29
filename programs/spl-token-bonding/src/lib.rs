@@ -13,7 +13,7 @@ pub mod util;
 
 use instructions::*;
 
-declare_id!("TBondmkCYxaPCKG4CHYfVTcwQ8on31xnJrPzk8F8WsS");
+declare_id!("CfGXJX3jD3mnXjwVP8gtrMMC3U1YUhBZVum3NFC1EMvb");
 
 #[program]
 pub mod spl_token_bonding {

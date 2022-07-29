@@ -3,6 +3,76 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [3.9.5](https://github.com/StrataFoundation/strata/compare/v3.9.4...v3.9.5) (2022-07-26)
+
+**Note:** Version bump only for package @strata-foundation/spl-utils
+
+
+
+
+
+## [3.9.3](https://github.com/StrataFoundation/strata/compare/v3.9.2...v3.9.3) (2022-07-25)
+
+**Note:** Version bump only for package @strata-foundation/spl-utils
+
+
+
+
+
+# [3.9.0](https://github.com/StrataFoundation/strata/compare/v3.8.2...v3.9.0) (2022-07-11)
+
+**Note:** Version bump only for package @strata-foundation/spl-utils
+
+
+
+
+
+## [3.8.2](https://github.com/StrataFoundation/strata/compare/v3.8.1...v3.8.2) (2022-06-19)
+
+**Note:** Version bump only for package @strata-foundation/spl-utils
+
+
+
+
+
+## [3.8.1](https://github.com/StrataFoundation/strata/compare/v3.8.0...v3.8.1) (2022-06-18)
+
+**Note:** Version bump only for package @strata-foundation/spl-utils
+
+
+
+
+
+# [3.7.0](https://github.com/StrataFoundation/strata/compare/v3.5.5...v3.7.0) (2022-06-02)
+
+
+### Bug Fixes
+
+* **transactions:** remove subscription if available ([#230](https://github.com/StrataFoundation/strata/issues/230)) ([e99f05c](https://github.com/StrataFoundation/strata/commit/e99f05c02dd1f0176c8303608ea4859c68774cf4))
+
+
+
+
+
+## [3.6.1](https://github.com/StrataFoundation/strata/compare/v3.6.0...v3.6.1) (2022-05-21)
+
+**Note:** Version bump only for package @strata-foundation/spl-utils
+
+
+
+
+
+## [3.5.7](https://github.com/StrataFoundation/strata/compare/v3.5.5...v3.5.7) (2022-05-07)
+
+
+### Bug Fixes
+
+* **transactions:** remove subscription if available ([#230](https://github.com/StrataFoundation/strata/issues/230)) ([e99f05c](https://github.com/StrataFoundation/strata/commit/e99f05c02dd1f0176c8303608ea4859c68774cf4))
+
+
+
+
+
 ## [3.5.5](https://github.com/StrataFoundation/strata/compare/v3.5.4...v3.5.5) (2022-04-19)
 
 **Note:** Version bump only for package @strata-foundation/spl-utils

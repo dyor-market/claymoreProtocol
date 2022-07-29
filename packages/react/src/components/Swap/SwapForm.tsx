@@ -33,7 +33,7 @@ import { useForm } from "react-hook-form";
 import { BsChevronDown } from "react-icons/bs";
 import { RiArrowUpDownFill, RiInformationLine } from "react-icons/ri";
 import * as yup from "yup";
-import { useFtxPayLink, useMint, useProvider, useTokenMetadata } from "../../hooks";
+import { useFtxPayLink, useMint, useProvider, useSolanaUnixTime, useTokenMetadata, useTokenSwapFromId } from "../../hooks";
 import { Royalties } from "./Royalties";
 import { TransactionInfo, TransactionInfoArgs } from "./TransactionInfo";
 import { useTwWrappedSolMint } from "../../hooks/useTwWrappedSolMint";
@@ -59,11 +59,13 @@ const validationSchema = yup
 export interface ISwapFormProps {
   isLoading?: boolean;
   isSubmitting: boolean;
+  isBuying: boolean;
   onConnectWallet: () => void;
   onTradingMintsChange: (args: { base: PublicKey; target: PublicKey }) => void;
-  onBuyBase: (tokenBonding: PublicKey) => void;
+  onBuyBase?: (tokenBonding: PublicKey) => void;
   onSubmit: (values: ISwapFormValues) => Promise<void>;
-  tokenBonding: ITokenBonding | undefined;
+  goLiveDate: Date | undefined;
+  id: PublicKey | undefined;
   pricing: BondingPricing | undefined;
   baseOptions: PublicKey[];
   targetOptions: PublicKey[];
@@ -90,6 +92,7 @@ export interface ISwapFormProps {
   feeAmount?: number;
   showAttribution?: boolean;
   extraTransactionInfo?: Omit<TransactionInfoArgs, "formRef">[];
+  swapBaseWithTargetEnabled?: boolean;
 }
 
 function MintMenuItem({
@@ -105,7 +108,7 @@ function MintMenuItem({
     <MenuItem
       onClick={onClick}
       icon={
-        <Center w={8} h={8} color="white" bg="primary.500" rounded="full">
+        <Center w={8} h={8} rounded="full">
           <Avatar w={"100%"} h={"100%"} size="sm" src={image} />
         </Center>
       }
@@ -123,7 +126,7 @@ export const SwapForm = ({
   onTradingMintsChange,
   onBuyBase,
   onSubmit,
-  tokenBonding,
+  id,
   pricing,
   base,
   target,
@@ -133,8 +136,11 @@ export const SwapForm = ({
   baseOptions,
   targetOptions,
   mintCap,
+  isBuying,
+  goLiveDate,
   numRemaining,
   showAttribution = true,
+  swapBaseWithTargetEnabled = true,
 }: ISwapFormProps) => {
   const formRef = useRef() as React.MutableRefObject<HTMLInputElement>;
   const { connected } = useWallet();
@@ -143,6 +149,7 @@ export const SwapForm = ({
   const [insufficientLiq, setInsufficientLiq] = useState<boolean>(false);
   const [rate, setRate] = useState<string>("--");
   const [fee, setFee] = useState<string>("--");
+  const notLive = goLiveDate && (new Date() < goLiveDate)
   const {
     register,
     handleSubmit,
@@ -168,22 +175,16 @@ export const SwapForm = ({
   const slippage = watch("slippage");
   const hasBaseAmount = (ownedBase || 0) >= +(topAmount || 0);
   const moreThanSpendCap = +(topAmount || 0) > spendCap;
+  const unixTime = useSolanaUnixTime();
 
-  const lowMint =
-    base &&
-    target &&
-    pricing?.hierarchy.lowest(base.publicKey, target.publicKey);
-  const isBuying = lowMint && lowMint.equals(target?.publicKey!);
-  const targetBonding = lowMint && pricing?.hierarchy.findTarget(lowMint);
+  const { tokenBonding, childEntangler, parentEntangler } =
+    useTokenSwapFromId(id);
+
   const passedMintCap =
     typeof numRemaining !== "undefined" && numRemaining < bottomAmount;
 
   const targetMintAcc = useMint(target?.publicKey);
   const baseMintAcc = useMint(base?.publicKey);
-
-  const notLive =
-    targetBonding &&
-    targetBonding.goLiveUnixTime.toNumber() > new Date().valueOf() / 1000;
 
   const handleConnectWallet = () => onConnectWallet();
   const manualResetForm = () => {
@@ -203,14 +204,19 @@ export const SwapForm = ({
   }
 
   useEffect(() => {
-    const interval = setInterval(updatePrice, 1000);
-    return () => clearInterval(interval);
-  }, [pricing, bottomAmount, topAmount, targetMintAcc, baseMintAcc]);
+    updatePrice();
+  }, [pricing, bottomAmount, topAmount, targetMintAcc, baseMintAcc, unixTime]);
 
   const handleTopChange = (value: number | undefined = 0) => {
     if (tokenBonding && pricing && base && target && value && +value >= 0) {
       setLastSet("top");
-      const amount = pricing.swap(+value, base.publicKey, target.publicKey);
+      const amount = pricing.swap(
+        +value,
+        base.publicKey,
+        target.publicKey,
+        true,
+        unixTime
+      );
       if (isNaN(amount)) {
         setInsufficientLiq(true);
       } else {
@@ -240,7 +246,13 @@ export const SwapForm = ({
   const handleBottomChange = (value: number | undefined = 0) => {
     if (tokenBonding && pricing && base && target && value && +value >= 0) {
       let amount = Math.abs(
-        pricing.swapTargetAmount(+value, target.publicKey, base.publicKey)
+        pricing.swapTargetAmount(
+          +value,
+          target.publicKey,
+          base.publicKey,
+          true,
+          unixTime
+        )
       );
       setLastSet("bottom");
 
@@ -268,6 +280,11 @@ export const SwapForm = ({
   };
 
   const attColor = useColorModeValue("gray.400", "gray.200");
+  const dropdownVariant = useColorModeValue("solid", "ghost");
+  const swapBackground = useColorModeValue("gray.200", "gray.500");
+  const color = useColorModeValue("gray.500", "gray.200");
+  const inputBorderColor = useColorModeValue("gray.200", "gray.500");
+  const useMaxBg = useColorModeValue("primary.200", "black.500");
 
   const handleUseMax = () => {
     const amount = (ownedBase || 0) >= spendCap ? spendCap : ownedBase || 0;
@@ -284,13 +301,11 @@ export const SwapForm = ({
     }
   };
 
-  const handleBuyBase = () => {
-    if (isBaseSol) {
-      window.open(ftxPayLink);
-    } else {
-      onBuyBase(tokenBonding!.publicKey);
-    }
-  };
+  const handleBuyBase = onBuyBase
+    ? () => onBuyBase(tokenBonding!.publicKey)
+    : isBaseSol
+    ? () => window.open(ftxPayLink)
+    : undefined;
 
   const handleSwap = async (values: ISwapFormValues) => {
     await onSubmit({ ...values, lastSet });
@@ -301,15 +316,13 @@ export const SwapForm = ({
   }
 
   return (
-    <Box ref={formRef} w="full">
+    <Box ref={formRef} w="full" color={color}>
       <form onSubmit={handleSubmit(handleSwap)}>
-        <VStack spacing={4} padding={4} align="stretch" color="gray.500">
-          <Flex flexDir="column">
+        <VStack spacing={4} align="stretch">
+          <VStack spacing={1} align="left">
             <Flex justifyContent="space-between">
-              <Text color="gray.600" fontSize="xs">
-                You Pay
-              </Text>
-              {base && (
+              <Text fontSize="xs">You Pay</Text>
+              {base && handleBuyBase && (
                 <Link color="primary.500" fontSize="xs" onClick={handleBuyBase}>
                   Buy More {base.ticker}
                 </Link>
@@ -320,7 +333,7 @@ export const SwapForm = ({
                 isInvalid={!!errors.topAmount}
                 isDisabled={!connected}
                 id="topAmount"
-                borderColor="gray.200"
+                borderColor={inputBorderColor}
                 placeholder="0"
                 type="number"
                 fontSize="2xl"
@@ -343,24 +356,20 @@ export const SwapForm = ({
                 {connected && (
                   <Menu>
                     <MenuButton
+                      variant={dropdownVariant}
                       cursor="pointer"
                       isDisabled={!connected}
                       as={Button}
-                      rightIcon={<BsChevronDown />}
+                      rightIcon={
+                        targetOptions.length > 0 ? <BsChevronDown /> : null
+                      }
                       leftIcon={
-                        <Center
-                          w={8}
-                          h={8}
-                          color="white"
-                          bg="primary.500"
-                          rounded="full"
-                        >
+                        <Center w={6} h={6} rounded="full">
                           <Avatar src={base.image} w="100%" h="100%" />
                         </Center>
                       }
                       borderRadius="20px 6px 6px 20px"
                       paddingX={1.5}
-                      bgColor="gray.200"
                     >
                       {base.ticker}
                     </MenuButton>
@@ -386,14 +395,14 @@ export const SwapForm = ({
                 )}
               </InputRightElement>
             </InputGroup>
-          </Flex>
+          </VStack>
           <HStack
             justify="center"
             alignItems="center"
             position="relative"
             paddingY={2}
           >
-            <Divider color="gray.200" />
+            <Divider borderColor={swapBackground} />
             <Flex>
               {!connected && (
                 <Button
@@ -411,6 +420,7 @@ export const SwapForm = ({
                   colorScheme="primary"
                   variant="ghost"
                   onClick={handleUseMax}
+                  _hover={{ bgColor: useMaxBg }}
                 >
                   Use Max (
                   {(ownedBase || 0) > spendCap ? spendCap : ownedBase || 0}{" "}
@@ -418,29 +428,30 @@ export const SwapForm = ({
                 </Button>
               )}
             </Flex>
-            <Divider color="gray.200" />
-            <IconButton
-              isDisabled={!connected}
-              aria-label="Flip Tokens"
-              size="sm"
-              colorScheme="gray"
-              rounded="full"
-              position="absolute"
-              right={2}
-              onClick={handleFlipTokens}
-              icon={<Icon as={RiArrowUpDownFill} w={5} h={5} />}
-            />
+            <Divider borderColor={swapBackground} />
+            {swapBaseWithTargetEnabled && (
+              <IconButton
+                isDisabled={!connected}
+                aria-label="Flip Tokens"
+                size="sm"
+                bgColor={swapBackground}
+                color="white"
+                rounded="full"
+                position="absolute"
+                right={2}
+                onClick={handleFlipTokens}
+                icon={<Icon as={RiArrowUpDownFill} w={5} h={5} />}
+              />
+            )}
           </HStack>
-          <Flex flexDir="column">
-            <Text color="gray.600" fontSize="xs">
-              You Receive
-            </Text>
+          <VStack align="left" spacing={1}>
+            <Text fontSize="xs">You Receive</Text>
             <InputGroup zIndex={99} size="lg">
               <Input
                 isInvalid={!!errors.bottomAmount}
                 isDisabled={!connected}
                 id="bottomAmount"
-                borderColor="gray.200"
+                borderColor={inputBorderColor}
                 placeholder="0"
                 type="number"
                 fontSize="2xl"
@@ -463,23 +474,19 @@ export const SwapForm = ({
                 {connected && (
                   <Menu>
                     <MenuButton
-                      rightIcon={<BsChevronDown />}
+                      variant={dropdownVariant}
+                      rightIcon={
+                        targetOptions.length > 0 ? <BsChevronDown /> : null
+                      }
                       isDisabled={!connected}
                       as={Button}
                       leftIcon={
-                        <Center
-                          w={8}
-                          h={8}
-                          color="white"
-                          bg="primary.500"
-                          rounded="full"
-                        >
+                        <Center w={6} h={6} rounded="full">
                           <Avatar src={target.image} w="100%" h="100%" />
                         </Center>
                       }
                       borderRadius="20px 6px 6px 20px"
                       paddingX={1.5}
-                      bgColor="gray.200"
                     >
                       {target.ticker}
                     </MenuButton>
@@ -504,16 +511,16 @@ export const SwapForm = ({
                 )}
               </InputRightElement>
             </InputGroup>
-          </Flex>
+          </VStack>
           <VStack
             spacing={1}
             padding={4}
             align="stretch"
-            color="gray.400"
-            borderColor="gray.200"
+            borderColor={inputBorderColor}
             borderWidth="1px"
             rounded="lg"
             fontSize="sm"
+            opacity={connected ? 1 : 0.6}
           >
             <Flex justify="space-between" alignItems="center">
               <Text>Rate</Text>
@@ -547,7 +554,7 @@ export const SwapForm = ({
                   isInvalid={!!errors.slippage}
                   isDisabled={!connected}
                   id="slippage"
-                  borderColor="gray.200"
+                  borderColor={inputBorderColor}
                   textAlign="right"
                   rounded="lg"
                   placeholder="0"
@@ -634,11 +641,7 @@ export const SwapForm = ({
                 )}
                 {notLive && (
                   <Text>
-                    Goes live at{" "}
-                    {targetBonding &&
-                      new Date(
-                        targetBonding.goLiveUnixTime.toNumber() * 1000
-                      ).toLocaleString()}
+                    Goes live at {goLiveDate && goLiveDate.toLocaleString()}
                   </Text>
                 )}
                 {!hasBaseAmount && (
@@ -661,30 +664,50 @@ export const SwapForm = ({
                 )}
               </Center>
             </ScaleFade>
-            <Button
-              isDisabled={
-                !connected ||
-                !hasBaseAmount ||
-                moreThanSpendCap ||
-                notLive ||
-                insufficientLiq ||
-                passedMintCap
-              }
-              w="full"
-              colorScheme="primary"
-              size="lg"
-              type="submit"
-              isLoading={awaitingApproval || isSubmitting}
-              loadingText={awaitingApproval ? "Awaiting Approval" : "Swapping"}
-            >
-              Trade
-            </Button>
+            {!connected && (
+              <Button
+                w="full"
+                colorScheme="primary"
+                size="lg"
+                onClick={onConnectWallet}
+              >
+                Connect Wallet
+              </Button>
+            )}
+            {connected && (
+              <Button
+                isDisabled={
+                  !connected ||
+                  !hasBaseAmount ||
+                  moreThanSpendCap ||
+                  notLive ||
+                  insufficientLiq ||
+                  passedMintCap
+                }
+                w="full"
+                colorScheme="primary"
+                size="lg"
+                type="submit"
+                isLoading={awaitingApproval || isSubmitting}
+                loadingText={
+                  awaitingApproval ? "Awaiting Approval" : "Swapping"
+                }
+              >
+                Trade
+              </Button>
+            )}
           </Box>
           {showAttribution && (
             <Center>
               <HStack spacing={1} fontSize="14px">
                 <Text color={attColor}>Powered by</Text>
-                <Link href="https://strataprotocol.com">Strata</Link>
+                <Link
+                  color="primary.500"
+                  fontWeight="medium"
+                  href="https://strataprotocol.com"
+                >
+                  Strata
+                </Link>
               </HStack>
             </Center>
           )}
@@ -693,3 +716,5 @@ export const SwapForm = ({
     </Box>
   );
 };
+
+export const MemodSwapForm = React.memo(SwapForm);

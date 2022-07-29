@@ -1,3 +1,4 @@
+
 import {
   Metadata,
   Creator,
@@ -5,7 +6,7 @@ import {
   MetadataProgram,
 } from "@metaplex-foundation/mpl-token-metadata";
 import * as anchor from "@project-serum/anchor";
-import { IdlTypes, Program, Provider } from "@project-serum/anchor";
+import { AnchorProvider, IdlTypes, Program, Provider } from "@project-serum/anchor";
 import { getHashedName, NameRegistryState } from "@solana/spl-name-service";
 import {
   AccountInfo as TokenAccountInfo,
@@ -92,6 +93,8 @@ export interface ICreateCollectiveArgs {
   authority?: PublicKey;
   /** The configs around what is and isn't allowed in the collective */
   config: ICollectiveConfig;
+  /** Only required if the mint is already initialised as a social token */
+  tokenRef?: PublicKey
 }
 
 // Taken from token bonding initialize
@@ -459,7 +462,7 @@ export class SplTokenCollective extends AnchorSdk<SplTokenCollectiveIDL> {
   splTokenBondingProgram: SplTokenBonding;
   splTokenMetadata: SplTokenMetadata;
 
-  static ID = new PublicKey("TCo1sfSr2nCudbeJPykbif64rG9K1JNMGzrtzvPmp3y");
+  static ID = new PublicKey("6SLodLeX6pkaF4u55arxmAHjzuuQCoFuyTR9t73Jj4uw");
   static OPEN_COLLECTIVE_ID = new PublicKey(
     "3cYa5WvT2bgXSLxxu9XDJSHV3x5JZGM91Nc3B7jYhBL7"
   );
@@ -471,7 +474,7 @@ export class SplTokenCollective extends AnchorSdk<SplTokenCollectiveIDL> {
   );
 
   static async init(
-    provider: Provider,
+    provider: AnchorProvider,
     splCollectiveProgramId: PublicKey = SplTokenCollective.ID,
     splTokenBondingProgramId: PublicKey = SplTokenBonding.ID
   ): Promise<SplTokenCollective> {
@@ -501,7 +504,7 @@ export class SplTokenCollective extends AnchorSdk<SplTokenCollectiveIDL> {
   }
 
   constructor(opts: {
-    provider: Provider;
+    provider: AnchorProvider;
     program: Program<SplTokenCollectiveIDL>;
     splTokenBondingProgram: SplTokenBonding;
     splTokenMetadata: SplTokenMetadata;
@@ -571,6 +574,7 @@ export class SplTokenCollective extends AnchorSdk<SplTokenCollectiveIDL> {
     config,
     bonding,
     metadata,
+    tokenRef,
   }: ICreateCollectiveArgs): Promise<
     BigInstructionResult<{ collective: PublicKey; tokenBonding?: PublicKey }>
   > {
@@ -639,26 +643,53 @@ export class SplTokenCollective extends AnchorSdk<SplTokenCollectiveIDL> {
       throw new Error("Collective already exists");
     }
 
-    instructions.push(
-      await this.instruction.initializeCollectiveV0(
-        // @ts-ignore
-        {
-          authority: authority ? authority : null,
-          bumpSeed: collectiveBump,
-          config: toIdlConfig(config),
-        },
-        {
-          accounts: {
-            collective,
-            mint: mint!,
-            mintAuthority: mintAuthority!,
-            payer,
-            systemProgram: SystemProgram.programId,
-            rent: SYSVAR_RENT_PUBKEY,
+    const [mintTokenRef] = await SplTokenCollective.mintTokenRefKey(mint);
+    const tokenRefExists = !!(await this.provider.connection.getAccountInfo(
+      mintTokenRef
+    ));
+
+    if (tokenRef || tokenRefExists) {
+      instructions.push(
+        await this.instruction.initializeCollectiveForSocialTokenV0(
+          // @ts-ignore
+          {
+            authority: authority ? authority : null,
+            config: toIdlConfig(config),
           },
-        }
-      )
-    );
+          {
+            accounts: {
+              collective,
+              mint: mint!,
+              tokenRef: tokenRef ? tokenRef : mintTokenRef,
+              payer,
+              systemProgram: SystemProgram.programId,
+              rent: SYSVAR_RENT_PUBKEY,
+            },
+          }
+        )
+      );
+    } else {
+      instructions.push(
+        await this.instruction.initializeCollectiveV0(
+          // @ts-ignore
+          {
+            authority: authority ? authority : null,
+            bumpSeed: collectiveBump,
+            config: toIdlConfig(config),
+          },
+          {
+            accounts: {
+              collective,
+              mint: mint!,
+              mintAuthority: mintAuthority!,
+              payer,
+              systemProgram: SystemProgram.programId,
+              rent: SYSVAR_RENT_PUBKEY,
+            },
+          }
+        )
+      );
+    }
 
     const instructions2 = [];
     const signers2 = [];
@@ -1134,12 +1165,7 @@ export class SplTokenCollective extends AnchorSdk<SplTokenCollectiveIDL> {
       mint = SplTokenCollective.OPEN_COLLECTIVE_MINT_ID;
     }
     const state = (await this.splTokenBondingProgram.getState())!;
-    const isNative =
-      mint?.equals(NATIVE_MINT) || mint?.equals(state.wrappedSolMint);
-    if (isNative) {
-      mint = state.wrappedSolMint;
-    }
-
+    
     let collectiveBumpSeed: number = 0;
     if (!collective) {
       [collective, collectiveBumpSeed] = await SplTokenCollective.collectiveKey(
@@ -1314,14 +1340,18 @@ export class SplTokenCollective extends AnchorSdk<SplTokenCollectiveIDL> {
         .ownedByName
         ? mintTokenRef
         : undefined,
-      // @ts-ignore
-      buyBaseRoyalties: tokenBondingSettings?.buyBaseRoyalties?.address || undefined,
-      // @ts-ignore
-      sellBaseRoyalties: tokenBondingSettings?.sellBaseRoyalties?.address || undefined,
-      // @ts-ignore
-      buyTargetRoyalties: tokenBondingSettings?.buyTargetRoyalties?.address || undefined,
-      // @ts-ignore
-      sellTargetRoyalties: tokenBondingSettings?.sellTargetRoyalties?.address || undefined,
+      buyBaseRoyalties:
+        // @ts-ignore
+        tokenBondingSettings?.buyBaseRoyalties?.address || undefined,
+      sellBaseRoyalties:
+        // @ts-ignore
+        tokenBondingSettings?.sellBaseRoyalties?.address || undefined,
+      buyTargetRoyalties:
+        // @ts-ignore
+        tokenBondingSettings?.buyTargetRoyalties?.address || undefined,
+      sellTargetRoyalties:
+        // @ts-ignore
+        tokenBondingSettings?.sellTargetRoyalties?.address || undefined,
       ...tokenBondingParams,
     });
     instructions2.push(...bondingInstructions);

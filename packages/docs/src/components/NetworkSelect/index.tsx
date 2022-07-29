@@ -12,7 +12,7 @@ export const NetworkSelect = () => {
     <VStack mb={8} align="start">
       <Heading size="md">Network</Heading>
       <Select value={endpoint} onChange={(e) => setEndpoint(e.target.value)}>
-        <option value={"https://psytrbhymqlkfrhudd.dev.genesysgo.net:8899/"}>
+        <option value={"https://solana--devnet.datahub.figment.io/apikey/24c64e276fc5db6ff73da2f59bac40f2"}>
           Devnet
         </option>
         <option value={"https://strataprotocol.genesysgo.net"}>Mainnet</option>

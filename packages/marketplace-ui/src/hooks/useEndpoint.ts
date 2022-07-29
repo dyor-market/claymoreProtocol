@@ -24,7 +24,7 @@ export function getClusterAndEndpoint(clusterOrEndpoint: string): {
    
         return {
           cluster: "devnet",
-          endpoint: "https://psytrbhymqlkfrhudd.dev.genesysgo.net:8899/",
+          endpoint: "https://solana--devnet.datahub.figment.io/apikey/24c64e276fc5db6ff73da2f59bac40f2",
         };
   }
 

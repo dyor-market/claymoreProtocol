@@ -500,7 +500,7 @@ Minor version bumping it because the below changes included some interface chang
 
 ### Changed
 
-- Token collective now lives at TCo1sfSr2nCudbeJPykbif64rG9K1JNMGzrtzvPmp3y
+- Token collective now lives at 6SLodLeX6pkaF4u55arxmAHjzuuQCoFuyTR9t73Jj4uw
 
 ### Removed
 
