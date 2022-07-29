@@ -1,8 +1,34 @@
 import React from "react";
 import { PublicKey } from "@solana/web3.js";
-import { VStack, HStack, Text, Checkbox, useDisclosure, TableContainer, Table, Thead, Tr, Th, Spinner, Td, Center, Box, TableColumnHeaderProps, Switch, Button, IconButton, useColorModeValue, Icon } from "@chakra-ui/react";
+import {
+  VStack,
+  HStack,
+  Text,
+  Tbody,
+  Checkbox,
+  useDisclosure,
+  TableContainer,
+  Table,
+  Thead,
+  Tr,
+  Th,
+  Spinner,
+  Td,
+  Center,
+  Box,
+  TableColumnHeaderProps,
+  Switch,
+  Button,
+  IconButton,
+  useColorModeValue,
+  Icon,
+} from "@chakra-ui/react";
 import { useTransactions } from "../../hooks/useTransactions";
-import { useMint, useTokenBonding, useTokenBondingKey } from "@strata-foundation/react";
+import {
+  useMint,
+  useTokenBonding,
+  useTokenBondingKey,
+} from "@strata-foundation/react";
 import { useMemo } from "react";
 import moment from "moment";
 import { numberWithCommas } from "../../utils/numberWithCommas";
@@ -12,7 +38,7 @@ import { BiRefresh } from "react-icons/bi";
 export const TransactionHistory = ({
   tokenBondingKey,
 }: {
-  tokenBondingKey: PublicKey;
+  tokenBondingKey?: PublicKey;
 }) => {
   const { info: tokenBonding, loading: loadingBonding } =
     useTokenBonding(tokenBondingKey);
@@ -30,12 +56,11 @@ export const TransactionHistory = ({
     () => (mineOnly ? publicKey || undefined : tokenBondingKey),
     [publicKey, tokenBondingKey, mineOnly]
   );
-  const { transactions, fetchMore, loadingInitial, fetchNew, loadingMore } = useTransactions(
-    {
+  const { transactions, fetchMore, loadingInitial, fetchNew, loadingMore } =
+    useTransactions({
       numTransactions: 5,
       address,
-    }
-  );
+    });
   const baseMint = useMint(tokenBonding?.baseMint);
   const targetMint = useMint(tokenBonding?.targetMint);
 
@@ -101,7 +126,7 @@ export const TransactionHistory = ({
 
   const thProps: TableColumnHeaderProps = {
     textTransform: "none",
-    color: "white",
+    color: icoColor,
     fontSize: "14px",
     letterSpacing: "none",
     padding: 4,
@@ -131,34 +156,35 @@ export const TransactionHistory = ({
       </HStack>
       <TableContainer>
         <Table variant="simple">
-          <Thead variant="unstyled">
+          <Thead>
             <Tr>
               <Th {...thProps}>Volume</Th>
               <Th {...thProps}>Price</Th>
               <Th {...thProps}>Time</Th>
             </Tr>
           </Thead>
-
-          {data.map(({ price, volume, time, signature }) => {
-            return (
-              <Tr
-                onClick={() =>
-                  window.open(
-                    `https://explorer.solana.com/tx/${signature}`,
-                    "_blank"
-                  )
-                }
-                _hover={{ background: "#303947", cursor: "pointer" }}
-                key={signature}
-              >
-                <Td>{numberWithCommas(volume, targetMint?.decimals)}</Td>
-                <Td>{numberWithCommas(price, baseMint?.decimals)}</Td>
-                <Td title={moment(time).format("llll")}>
-                  {moment(time).fromNow()}
-                </Td>
-              </Tr>
-            );
-          })}
+          <Tbody>
+            {data.map(({ price, volume, time, signature }) => {
+              return (
+                <Tr
+                  onClick={() =>
+                    window.open(
+                      `https://explorer.solana.com/tx/${signature}`,
+                      "_blank"
+                    )
+                  }
+                  _hover={{ background: "#303947", cursor: "pointer" }}
+                  key={signature}
+                >
+                  <Td>{numberWithCommas(volume, targetMint?.decimals)}</Td>
+                  <Td>{numberWithCommas(price, baseMint?.decimals)}</Td>
+                  <Td title={moment(time).format("llll")}>
+                    {moment(time).fromNow()}
+                  </Td>
+                </Tr>
+              );
+            })}
+          </Tbody>
         </Table>
       </TableContainer>
       {loadingInitial && (

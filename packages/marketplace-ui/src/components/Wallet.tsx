@@ -7,20 +7,18 @@ import {
   PhantomWalletAdapter,
   SlopeWalletAdapter,
   SolflareWalletAdapter,
-  SolletExtensionWalletAdapter,
-  SolletWalletAdapter,
+  GlowWalletAdapter,
   TorusWalletAdapter,
+  ExodusWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
 import React, { useMemo } from "react";
 import { SOLANA_URL } from "../constants";
-import { useEndpoint } from "../hooks";
+import { useEndpoint } from "@strata-foundation/react";
 
 export const DEFAULT_ENDPOINT = SOLANA_URL;
 
-export const getToken = async () => {
-  const req = await fetch("/api/get-token");
-  const { access_token }: { access_token: string } = await req.json();
-  return access_token;
+const config: any = {
+  commitment: "confirmed",
 };
 
 export const Wallet = ({
@@ -30,7 +28,7 @@ export const Wallet = ({
   children: React.ReactNode;
   cluster?: string;
 }) => {
-  const { endpoint } = useEndpoint();
+  const { endpoint, cluster: clusterFromUseEndpoint } = useEndpoint();
 
   // @solana/wallet-adapter-wallets includes all the adapters but supports tree shaking and lazy loading --
   // Only the wallets you configure here will be compiled into your application, and only the dependencies
@@ -38,22 +36,21 @@ export const Wallet = ({
   const wallets = useMemo(
     () => [
       new PhantomWalletAdapter(),
+      new GlowWalletAdapter(),
+      // @ts-ignore
+      new SolflareWalletAdapter({ network: clusterFromUseEndpoint }),
       new SlopeWalletAdapter(),
-      new SolflareWalletAdapter(),
       new TorusWalletAdapter(),
       new LedgerWalletAdapter(),
-      new SolletWalletAdapter({}),
-      new SolletExtensionWalletAdapter({}),
+      new ExodusWalletAdapter(),
     ],
-    []
+    [clusterFromUseEndpoint]
   );
 
   return (
     <ConnectionProvider
       endpoint={cluster || endpoint}
-      config={{
-        commitment: "confirmed"
-      }}
+      config={config}
     >
       <WalletProvider wallets={wallets} autoConnect>
         {children}

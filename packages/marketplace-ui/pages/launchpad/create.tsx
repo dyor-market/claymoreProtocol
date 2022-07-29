@@ -20,21 +20,21 @@ export const CreateToken: FC = () => {
     heading: string;
     illustration: string;
     helpText: string;
-  }[] = [ 
+  }[] = [
     {
       value: CreateTokenOption.FullyManaged,
-      heading: "Claymores",
+      heading: "Fully Managed",
       illustration: "/fully-managed.svg",
       helpText:
-        "Clickme"//"Create you a token that you can let people buy right now. You do not need to worry about liquidity providers, supply management, or pricing.",
-    }, /*
+        "Create a token that you can let people buy right now. You do not need to worry about liquidity providers, supply management, or pricing.",
+    },
     {
       value: CreateTokenOption.SelfManaged,
       heading: "Self Managed",
       illustration: "/self-managed.svg",
       helpText:
         "You want to manage your own supply and liquidity. You do not need protocol managed liquditity.",
-    }, */
+    },
   ];
 
   const { getRootProps, getRadioProps } = useRadioGroup({
@@ -76,7 +76,11 @@ export const CreateToken: FC = () => {
                 direction={{ base: "row", md: "column" }}
                 textAlign={{ base: "left", md: "center" }}
               >
-                <Flex justifyContent="center" alignItem="center" flexShrink={0}>
+                <Flex
+                  justifyContent="center"
+                  alignItems="center"
+                  flexShrink={0}
+                >
                   <Image
                     src={illustration}
                     alt={`${value}-illustration`}

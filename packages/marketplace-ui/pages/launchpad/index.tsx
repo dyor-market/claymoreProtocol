@@ -1,17 +1,15 @@
-import React, { FC, useState } from "react";
-import { useRouter } from "next/router";
-import Image from "next/image";
+import { RadioCardWithAffordance } from "@/components/form";
+import { LaunchpadLayout } from "@/components/launchpad";
+import { route, routes } from "@/utils/routes";
 import {
   Box,
   Flex,
   Stack,
-  Text,
-  useRadioGroup,
-  useMediaQuery,
+  Text, useMediaQuery, useRadioGroup
 } from "@chakra-ui/react";
-import { LaunchpadLayout } from "@/components/launchpad";
-import { RadioCardWithAffordance } from "@/components/form";
-import { route, routes } from "@/utils/routes";
+import Image from "next/image";
+import { useRouter } from "next/router";
+import React, { FC, useState } from "react";
 
 export enum LandingOption {
   CreateToken = "CreateToken",
@@ -34,30 +32,30 @@ export const LaunchPad: FC = ({ children }) => {
   }[] = [
     {
       value: LandingOption.CreateToken,
-      heading: "Create New Claymore",
+      heading: "Create New Token",
       illustration: "/create-a-token.svg",
-      helpText: "Ayy.",
+      helpText: "You don’t have a token yet, but would like to create one.",
     },
     {
       value: LandingOption.SellToken,
-      heading: "Show Me the APYs",
-      illustration: "/sell-token-later.svg",
-      helpText: "Wait, sers.",
+      heading: "Sell Existing Token",
+      illustration: "/sell-a-token.svg",
+      helpText: "You already have a token created that you would like to sell.",
     },
     {
       value: LandingOption.Fundraise,
-      heading: "Swap/Stake/Unstake/YIELD BOOM",
+      heading: "Fundraise",
       illustration: "/fundraise.svg",
       helpText:
-        "This is the cool bit.",
-    }/*
+        "You want to collect funds for a cause, where contributors get a token representing their contributions.",
+    },
     {
       value: LandingOption.LBC,
       heading: "Dynamic Pricing NFT Mint",
       illustration: "/dynamic-pricing-mint.svg",
       helpText:
         "Sell NFTs from a Metaplex CandyMachine using Strata’s dynamic price discovery. This allows you to avoid bots without the need of a whitelist.",
-    },*/
+    },
   ];
 
   const { getRootProps, getRadioProps } = useRadioGroup({
@@ -69,14 +67,13 @@ export const LaunchPad: FC = ({ children }) => {
 
   const handleOnNext = async () => {
     if (selectedOption === LandingOption.CreateToken)
-      router.push(route(routes.newFullyManaged));
+      router.push(route(routes.create));
 
     if (selectedOption === LandingOption.SellToken)
       router.push(route(routes.sell));
 
     if (selectedOption === LandingOption.Fundraise)
-      router.push(
-        route(routes.swap, { mintKey: "12yd5cGsGeBEDJzzRxKfSttGB4bbA7oY4frEBBsiUwiq", fanoutKey:"Gha7WZxD76pbS6NCrP2kZR2PGhUmfFEZnKU4oYvBJhkp" }));
+      router.push(route(routes.newBounty));
 
     if (selectedOption === LandingOption.LBC)
       router.push(route(routes.newLbc, { candymachine: "true" }));
@@ -152,7 +149,13 @@ export const LaunchPad: FC = ({ children }) => {
           }
         )}
       </Stack>
-      <Flex w="full" justifyContent="center">
+      <Stack 
+        w="full"
+        spacing={2} 
+        direction={{ base: "column", md: "row" }}
+        justifyContent={{ base: "stretch", md: "center" }}
+        alignItems={{ base: "center", md: "stretch" }}
+      >
         <Box
           bg="white"
           position="relative"
@@ -167,37 +170,72 @@ export const LaunchPad: FC = ({ children }) => {
           cursor="pointer"
           onClick={() =>
             window.open(
-              "https://twitter.com/@staccart"
+              "https://twitter.com/messages/compose?recipient_id=1455566541941006345"
             )
           }
         >
           <Stack direction="row">
             <Flex flexShrink={0} justifyContent="center" alignItems="center">
               <Image
-                src="/jare.jpeg"
-                height="100px"
+                src="/sell-token-later.svg"
+                height="50px"
                 width="100%"
                 alt="Check Back Later"
               />
             </Flex>
             <Stack flexGrow={1} spacing={0}>
               <Text fontWeight="bold" fontSize="sm">
-                The stream of conciousness is on twitter.
+                Dont see what you want to do?
               </Text>
               <Text color="gray.500" fontSize="xs">
-                Click, follow, notifs on. 
+                Check back later as we will be adding more options to this page.
               </Text>
               <Text color="gray.500" fontSize="xs" pt={2}>
-                Mm,{" "}
+                Or feel free to reach out to us via{" "}
                 <Text as="span" color="orange.500">
                   Twitter
                 </Text>{" "}
-                : for shitpostin n networkin (in that order)
+                and we can brainstorm something with you together!
               </Text>
             </Stack>
           </Stack>
         </Box>
-      </Flex>
+        <Box
+          bg="white"
+          position="relative"
+          rounded="lg"
+          borderWidth="1px"
+          borderColor="white"
+          _hover={{ borderColor: "orange.500" }}
+          py={4}
+          px={2}
+          w="100%"
+          maxW="492px"
+          cursor="pointer"
+          onClick={() => router.push(route(routes.editMetadata))}
+        >
+          <Stack direction="row">
+            <Flex flexShrink={0} justifyContent="center" alignItems="center">
+              <Image
+                src="/update-metadata.svg"
+                height="50px"
+                width="100%"
+                alt="Update Metadata"
+              />
+            </Flex>
+            <Stack flexGrow={1} spacing={0}>
+              <Text fontWeight="bold" fontSize="sm">
+                Edit my Token&apos;s Name, Symbol, or Image
+              </Text>
+              <Text color="gray.500" fontSize="xs">
+                Update the name, symbol, or image of an existing token using the
+                Metaplex Token Metadata Standard. You can also use this to
+                convert token-list tokens to be Metaplex standard compliant.
+              </Text>
+            </Stack>
+          </Stack>
+        </Box>
+      </Stack>
     </LaunchpadLayout>
   );
 };

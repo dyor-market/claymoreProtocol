@@ -16,7 +16,7 @@ const sections = [
     items: [
       {
         title: "Tutorial",
-        href: "https://docs.strataprotocol.com",
+        href: "http://localhost:3000",
       },
     ],
   },

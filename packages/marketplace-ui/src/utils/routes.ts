@@ -3,6 +3,8 @@ export interface IRoute {
   params: string[];
 }
 
+export const DOCS_URL = process.env.NEXT_PUBLIC_DOCS_URL;
+
 export const routes: Record<string, IRoute> = {
   bounties: { path: "/bounties", params: [] },
   newBounty: { path: "/launchpad/bounties/new", params: [] },
@@ -14,21 +16,39 @@ export const routes: Record<string, IRoute> = {
     path: "/bounties/:mintKey/edit",
     params: ["mintKey"],
   },
+  editMetadata: {
+    path: "/edit-metadata",
+    params: [],
+  },
   sales: { path: "/sales", params: [] },
-  newSale: { path: "/launchpad/sales/new", params: [] },
-  sale: { path: "/sales/:mintKey", params: ["mintKey"] },
+  newFixedPrice: { path: "/launchpad/fixed-price/new", params: [] },
   newLbc: { path: "/launchpad/lbcs/new", params: [] },
   tokenLbc: {
-    path: "/lbcs/token-offering/:mintKey",
-    params: ["mintKey"],
+    path: "/lbcs/token-offering/:id", // key is expected to be either a mint or child entangler
+    params: ["id"],
   },
   mintLbc: {
     path: "/lbcs/mint/:candyMachineId",
     params: ["candyMachineId"],
   },
+  tokenLbcAdmin: {
+    path:
+      process.env.NEXT_PUBLIC_DOCS_URL + "/launchpad/admin/lbc",
+    params: [],
+  },
+  fixedPriceAdmin: {
+    path: process.env.NEXT_PUBLIC_DOCS_URL + "/launchpad/admin/fixed-price",
+    params: [],
+  },
+  mintLbcAdmin: {
+    path:
+      process.env.NEXT_PUBLIC_DOCS_URL +
+      "/launchpad/admin/dynamic-pricing-mint",
+    params: [],
+  },
   tokenOffering: {
-    path: "/token-offering/:mintKey",
-    params: ["mintKey"],
+    path: "/token-offering/:id",
+    params: ["id"],
   },
   swap: { path: "/swap/:mintKey?fanoutKey=:fanoutKey", params: ["mintKey", "fanoutKey"] },
   newFullyManaged: { path: "/launchpad/fully-managed/new", params: [] },
@@ -63,7 +83,7 @@ export function route(
   const search = typeof window != "undefined" && window.location.search;
   const currQuery = new URLSearchParams(search || "");
   const cluster = currQuery.get("cluster");
-  if (cluster) {
+  if (cluster && !params.cluster) {
     params.cluster = cluster;
   }
   const nextQuery = new URLSearchParams(rmUndefined(params)).toString();

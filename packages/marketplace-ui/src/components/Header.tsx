@@ -5,6 +5,7 @@ import {
   Button,
   Center,
   Container,
+  DarkMode,
   Flex,
   HStack,
   IconButton,
@@ -31,7 +32,7 @@ const NavLink = ({ href, children }: { href: string; children: ReactNode }) => (
 export const Header: React.FC = () => {
   const Links = [
     { link: "Launchpad", href: route(routes.launchpad) },
-  //  { link: "Bounties", href: route(routes.bounties) },
+    { link: "Bounties", href: route(routes.bounties) },
   ];
   const { disconnect, connected } = useWallet();
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -61,8 +62,8 @@ export const Header: React.FC = () => {
               onClick={isOpen ? onClose : onOpen}
             />
             <HStack spacing={8} alignItems={"center"}>
-              <Link href="/">
-                <Image height="40px" alt="Claymore Protocol" src="/jare.jpeg" />
+              <Link href={route(routes.launchpad)}>
+                <Image alt="Strata Launchpad" src="/logo-launchpad.svg" />
               </Link>
               <HStack
                 as={"nav"}
@@ -82,7 +83,11 @@ export const Header: React.FC = () => {
               direction={["column", "row", "row", "row"]}
               pt="0"
             >
-              <Flex justify="center" align="center" display={{ base: "none", md: "flex" }}>
+              <Flex
+                justify="center"
+                align="center"
+                display={{ base: "none", md: "flex" }}
+              >
                 <TwitterLink />
                 {connected && (
                   <Button
@@ -94,10 +99,14 @@ export const Header: React.FC = () => {
                     Disconnect
                   </Button>
                 )}
-                <WalletModalButton />
+                <DarkMode>
+                  <WalletModalButton />
+                </DarkMode>
               </Flex>
               <Flex justify="center" display={{ base: "flex", md: "none" }}>
-                <WalletModalButton size="sm" />
+                <DarkMode>
+                  <WalletModalButton size="sm" />
+                </DarkMode>
               </Flex>
             </HStack>
           </Container>

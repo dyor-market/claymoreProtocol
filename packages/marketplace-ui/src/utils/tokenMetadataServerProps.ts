@@ -1,75 +1,71 @@
-import { Provider } from "@project-serum/anchor";
+import { AnchorProvider } from "@project-serum/anchor";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
-import { GetServerSideProps } from "next";
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet";
 import { DEFAULT_ENDPOINT } from "../components/Wallet";
-import { SplTokenMetadata } from "@strata-foundation/spl-utils";
+import { FungibleEntangler } from "@strata-foundation/fungible-entangler";
+import { ApolloClient, gql, InMemoryCache } from "@apollo/client";
 import { Metadata } from "@metaplex-foundation/mpl-token-metadata";
-import { getClusterAndEndpoint } from "../hooks";
-import { Base64 } from "js-base64";
-import axios from "axios";
-import { tokenAuthFetchMiddleware } from "@strata-foundation/web3-token-auth";
-
-async function getToken(): Promise<string> {
-  if (process.env.NEXT_PUBLIC_ISSUER) {
-    const token = Base64.encode(
-      `${process.env.NEXT_PUBLIC_CLIENT_ID}:${process.env.NEXT_PUBLIC_CLIENT_SECRET}`
-    );
-    const { access_token } = (
-      await axios.post(
-        `${process.env.NEXT_PUBLIC_ISSUER}/token`,
-        "grant_type=client_credentials",
-        {
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-            Authorization: `Basic ${token}`,
-          },
-        }
-      )
-    ).data;
-    return access_token;
-  }
-
-  return "";
-}
+import { GetServerSideProps } from "next";
+import { getClusterAndEndpoint } from "@strata-foundation/react";
 
 export const mintMetadataServerSideProps: GetServerSideProps = async (
   context
 ) => {
-  const { endpoint } = getClusterAndEndpoint((context.query.cluster || DEFAULT_ENDPOINT) as string);
+  const { endpoint } = getClusterAndEndpoint(
+    (context.query.cluster || DEFAULT_ENDPOINT) as string
+  );
 
-  const connection = new Connection(endpoint, {
-    fetchMiddleware: tokenAuthFetchMiddleware({
-      getToken
-    })
+  const apollo = new ApolloClient({
+    uri: "https://graph.holaplex.com/v1",
+    cache: new InMemoryCache(),
   });
-  const provider = new Provider(
+
+  const connection = new Connection(endpoint, {});
+  const provider = new AnchorProvider(
     connection,
     new NodeWallet(Keypair.generate()),
     {}
   );
-  const mint = new PublicKey(context.params?.mintKey as string);
-  const tokenMetadataSdk = await SplTokenMetadata.init(provider);
-  const metadataAcc =
-    (await tokenMetadataSdk.getMetadata(
-      await Metadata.getPDA(mint)
-    ));
-  let metadata = null;
-  try {
-    metadata = await SplTokenMetadata.getArweaveMetadata(
-      metadataAcc?.data.uri
-    );
-  } catch (e: any) {
-    console.error(e);
+  let mintKeyStr;
+  if (context.params?.mintKey) {
+    mintKeyStr = context.params?.mintKey;
+  } else if (context.params?.id) {
+    mintKeyStr = context.params?.id;
+    const id = new PublicKey(mintKeyStr as string);
+    const fungibleEntanglerSdk = await FungibleEntangler.init(provider);
+    let childEntangler = await fungibleEntanglerSdk.getChildEntangler(id);
+    if (childEntangler) {
+      const parentEntangler = await fungibleEntanglerSdk.getParentEntangler(childEntangler.parentEntangler);
+      mintKeyStr = parentEntangler?.parentMint.toString()
+    }
   }
+  const mint = new PublicKey(mintKeyStr as string);
 
-  const name = metadataAcc?.data?.name.length == 32 ? metadata?.name : metadataAcc?.data?.name;
+  const address = (
+    await Metadata.getPDA(mint)
+  ).toBase58();
+  const result = await apollo.query<{ nft: { name: string, description: string, image: string} }>({
+    query: gql`
+      query GetUrl($address: String!) {
+        nft(address: $address) {
+          name
+          description
+          image
+        }
+      }
+    `,
+    variables: {
+      address,
+    },
+  });
+
+  const { name, description, image } = (result.data?.nft || {});
 
   return {
     props: {
       name: name || null,
-      description: metadata?.description || null,
-      image: (await SplTokenMetadata.getImage(metadataAcc?.data.uri)) || null,
+      description: description || null,
+      image: image || null,
     },
   };
 };
