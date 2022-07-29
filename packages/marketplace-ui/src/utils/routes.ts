@@ -50,7 +50,7 @@ export const routes: Record<string, IRoute> = {
     path: "/token-offering/:id",
     params: ["id"],
   },
-  swap: { path: "/swap/:mintKey?fanoutKey=:fanoutKey", params: ["mintKey", "fanoutKey"] },
+  swap: { path: "/swap/:id?fanoutKey=:fanoutKey", params: ["id", "fanoutKey"] },
   newFullyManaged: { path: "/launchpad/fully-managed/new", params: [] },
   newManual: { path: "/launchpad/manual/new", params: [] },
   launchpad: { path: "/launchpad", params: [] },
